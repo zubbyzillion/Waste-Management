@@ -12,6 +12,7 @@ import {Web3Auth} from "@web3auth/modal"
 import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from "@web3auth/base"
 import {EthereumPrivateKeyProvider} from "@web3auth/ethereum-provider"
 import { createUseCacheTracker } from "next/dist/build/webpack/plugins/telemetry-plugin/use-cache-tracker-utils"
+import { createUser, getUnreadNotifications, getUserByEmail } from "@/utils/db/actions"
 // import {useMediaQuery} from ""
 
 const clientId = process.env.WEB3_AUTH_CLIENT_ID
@@ -64,10 +65,46 @@ export default function Header({ onMenuClick, totalEarnings}: HeaderProps){
 
                     if(user.email){
                         localStorage.setItem("userEmail", user.email)
-                        await createUser
+                        try {
+                            await createUser(user.email, user.name, || "Anonymous user")
+                        }catch(error) {
+                            console.error("Error creating user", error)
+                        }
                     }
                 }
-            }catch(error){}
+            }catch(error){
+                console.error("Error initializing web3auth", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        init()
+    }, [])
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            if(userInfo && userInfo.email){
+                const user = await getUserByEmail(userInfo.email)
+                if(user){
+                    const unreadNotifications = await getUnreadNotifications(user.id)
+                    setNotification(unreadNotifications)
+                }
+            }
+        }
+        fetchNotifications();
+
+        const notificationInterval = setInterval(fetchNotifications, 3000)
+        return () => clearInterval(notificationInterval)
+    }, [userInfo])
+
+    useEffect(() => {
+        const fetchUserBalance = async () => {
+            if(userInfo && userInfo.email){
+                const user = await getUserByEmail(userInfo.email);
+                if(user){
+                    const userBalance
+                }
+            }
         }
     })
 }
